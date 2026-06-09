@@ -1,0 +1,1123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cabling Logbook</title>
+
+<style>
+:root {
+  --bg-color: #ffffff;
+  --text-color: #000000;
+  --border-color: #ccc;
+  --input-bg: #ffffff;
+  --input-border: #ccc;
+  --section-bg: #f9f9f9;
+  --button-hover: #e8e8e8;
+}
+
+body.dark-mode {
+  --bg-color: #1e1e1e;
+  --text-color: #e0e0e0;
+  --border-color: #444;
+  --input-bg: #2d2d2d;
+  --input-border: #444;
+  --section-bg: #2d2d2d;
+  --button-hover: #3d3d3d;
+}
+
+* {
+  color: var(--text-color);
+  box-sizing: border-box;
+}
+
+html, body {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+}
+
+body {
+  font-family: Arial, sans-serif;
+  max-width: 800px;
+  margin: auto;
+  padding: 15px;
+  background-color: var(--bg-color);
+  transition: background-color 0.3s, color 0.3s;
+  font-size: 16px;
+}
+
+h1, h2, h3 {
+  margin: 15px 0 10px 0;
+}
+
+h2 {
+  font-size: 24px;
+}
+
+h3 {
+  font-size: 18px;
+}
+
+p {
+  margin: 8px 0;
+  font-size: 16px;
+}
+
+input, select, button {
+  width: 100%;
+  margin: 8px 0;
+  padding: 14px;
+  font-size: 16px;
+  background-color: var(--input-bg);
+  border: 2px solid var(--input-border);
+  color: var(--text-color);
+  border-radius: 6px;
+  font-family: Arial, sans-serif;
+}
+
+button {
+  cursor: pointer;
+  transition: background-color 0.2s;
+  font-weight: bold;
+  min-height: 48px;
+}
+
+button:hover {
+  background-color: var(--button-hover);
+}
+
+button:active {
+  transform: scale(0.98);
+}
+
+input, select {
+  box-sizing: border-box;
+}
+
+.entry {
+  border: 2px solid var(--border-color);
+  padding: 15px;
+  margin-top: 12px;
+  background-color: var(--section-bg);
+  border-radius: 6px;
+  font-size: 16px;
+  line-height: 1.6;
+}
+
+.entry b {
+  font-size: 17px;
+  display: block;
+  margin-bottom: 8px;
+}
+
+.entry-buttons {
+  display: flex;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.entry-buttons button {
+  flex: 1;
+  width: auto;
+  margin: 0;
+  padding: 12px;
+  font-size: 14px;
+  min-height: 44px;
+}
+
+.week-section {
+  border: 3px solid var(--border-color);
+  padding: 20px;
+  margin-top: 20px;
+  background-color: var(--section-bg);
+  border-radius: 8px;
+}
+
+.week-header {
+  background-color: #4CAF50;
+  color: white;
+  padding: 15px;
+  border-radius: 6px;
+  margin: -20px -20px 15px -20px;
+  font-size: 18px;
+  font-weight: bold;
+}
+
+.week-header.signed {
+  background-color: #2196F3;
+}
+
+.week-header.unsigned {
+  background-color: #ff9800;
+}
+
+.week-totals {
+  display: flex;
+  justify-content: space-around;
+  padding: 12px 0;
+  margin: 12px 0;
+  border-top: 2px solid var(--border-color);
+  border-bottom: 2px solid var(--border-color);
+  flex-wrap: wrap;
+}
+
+.week-total-item {
+  text-align: center;
+  padding: 8px;
+}
+
+.week-total-item b {
+  display: block;
+  font-size: 20px;
+  margin-top: 5px;
+}
+
+.supervisor-info {
+  background-color: var(--input-bg);
+  padding: 15px;
+  border-radius: 6px;
+  margin: 15px 0;
+  border: 2px solid var(--border-color);
+}
+
+.supervisor-info.signed {
+  border-color: #4CAF50;
+  background-color: rgba(76, 175, 80, 0.1);
+}
+
+.supervisor-name {
+  font-weight: bold;
+  font-size: 16px;
+}
+
+.signature-display {
+  border: 2px solid var(--border-color);
+  padding: 10px;
+  border-radius: 6px;
+  text-align: center;
+  margin: 10px 0;
+}
+
+.signature-display img {
+  max-width: 100%;
+  height: auto;
+  max-height: 150px;
+  border: 1px solid var(--border-color);
+}
+
+#signatureCanvas {
+ border: 2px solid var(--border-color);
+  display: block;
+  margin: 15px auto;
+  touch-action: none;
+  background: var(--input-bg);
+  cursor: crosshair;
+  width: 100%;
+  max-width: 100%;
+  height: 150px;
+  border-radius: 6px;
+}
+
+
+.signature-section {
+  overflow-x: hidden;
+}
+
+.signature-section {
+  margin-top: 15px;
+  padding: 15px;
+  border: 2px solid var(--border-color);
+  background: var(--section-bg);
+  border-radius: 6px;
+}
+
+.button-group {
+  display: flex;
+  gap: 12px;
+  margin: 15px 0;
+}
+
+.button-group button {
+  flex: 1;
+  width: auto;
+  margin: 0;
+  padding: 12px;
+  min-height: 44px;
+}
+
+.header-controls {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 15px;
+  flex-wrap: wrap;
+}
+
+.header-controls button {
+  flex: 1;
+  min-width: 100px;
+  width: auto;
+  margin: 0;
+  padding: 12px;
+  font-size: 14px;
+  min-height: 44px;
+}
+
+.edit-modal {
+  display: none;
+  position: fixed;
+  z-index: 1000;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5);
+  overflow: auto;
+  padding: 20px;
+}
+
+.edit-modal-content {
+  background-color: var(--bg-color);
+  margin: 20px auto;
+  padding: 20px;
+  border: 2px solid var(--border-color);
+  width: 100%;
+  max-width: 500px;
+  border-radius: 6px;
+}
+
+.edit-modal-content input, .edit-modal-content select {
+  margin: 12px 0;
+  font-size: 16px;
+}
+
+.modal-buttons {
+  display: flex;
+  gap: 12px;
+  margin-top: 20px;
+}
+
+.modal-buttons button {
+  flex: 1;
+  width: auto;
+  margin: 0;
+  min-height: 44px;
+}
+
+.close {
+  color: var(--text-color);
+  float: right;
+  font-size: 32px;
+  font-weight: bold;
+  cursor: pointer;
+}
+
+.close:hover {
+  opacity: 0.7;
+}
+
+.status-message {
+  padding: 15px;
+  margin: 12px 0;
+  border-radius: 6px;
+  text-align: center;
+  display: none;
+  font-size: 16px;
+  font-weight: bold;
+}
+
+.status-message.success {
+  background-color: #4CAF50;
+  color: white;
+  display: block;
+}
+
+.status-message.error {
+  background-color: #f44336;
+  color: white;
+  display: block;
+}
+
+hr {
+  margin: 20px 0;
+  border: none;
+  border-top: 1px solid var(--border-color);
+}
+
+#total {
+  font-size: 20px;
+  font-weight: bold;
+}
+
+.week-selector {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 15px;
+  flex-wrap: wrap;
+}
+
+.week-selector button {
+  flex: 0 1 auto;
+  min-width: 150px;
+  padding: 10px;
+  min-height: 40px;
+}
+
+.week-selector button.active {
+  background-color: #4CAF50;
+  color: white;
+  font-weight: bold;
+}
+
+.info-box {
+  background-color: #e3f2fd;
+  border-left: 4px solid #2196F3;
+  padding: 15px;
+  margin: 15px 0;
+  border-radius: 4px;
+}
+
+body.dark-mode .info-box {
+  background-color: #1a3a52;
+  border-left-color: #64b5f6;
+}
+
+.action-buttons {
+  display: flex;
+  gap: 12px;
+  margin: 15px 0;
+}
+
+.action-buttons button {
+  flex: 1;
+  width: auto;
+  margin: 0;
+  padding: 12px;
+  min-height: 44px;
+  font-size: 14px;
+}
+
+@media print {
+  body {
+    padding: 0;
+  }
+  .header-controls, .info-box, .week-selector, .signature-section, .action-buttons, .entry-buttons, #addBtn, .print-controls {
+    display: none !important;
+  }
+  .week-section {
+    page-break-inside: avoid;
+    border: none;
+    padding: 0;
+    margin: 0;
+  }
+}
+
+/* Tablet and up */
+@media (min-width: 768px) {
+  body {
+    padding: 30px;
+    font-size: 16px;
+  }
+  
+  .header-controls button {
+    min-width: auto;
+  }
+  
+  #signatureCanvas {
+    height: 120px;
+    max-width: 350px;
+  }
+  
+  .week-selector button {
+    min-width: 140px;
+  }
+}
+
+/* Landscape phone optimization */
+@media (max-height: 500px) {
+  .header-controls {
+    margin-bottom: 8px;
+  }
+  
+  .entry {
+    padding: 12px;
+    margin-top: 8px;
+  }
+  
+  input, select, button {
+    margin: 6px 0;
+    padding: 10px;
+  }
+}
+</style>
+</head>
+
+<body>
+
+<div class="header-controls">
+  <button id="darkModeBtn" type="button">🌙 Dark</button>
+  <button id="exportBtn" type="button">📥 Export</button>
+  <button id="resetBtn" type="button">🔄 Reset</button>
+</div>
+
+<h2>Cabling Logbook</h2>
+
+<div id="statusMsg" class="status-message"></div>
+
+<div class="info-box">
+  <strong>📝 How it works:</strong> Add entries below, they'll be grouped by week. Each week can have a different supervisor sign-off.
+</div>
+
+<!-- Details -->
+<input id="name" placeholder="Your Name" type="text">
+<input id="employer" placeholder="Employer" type="text">
+
+<hr>
+
+<!-- Add Entry Form -->
+<h3>Add New Entry</h3>
+<input id="date" type="date">
+<input id="job" placeholder="Job" type="text">
+<input id="work" placeholder="Work" type="text">
+<input id="hours" type="number" placeholder="Hours" step="0.5" min="0">
+
+<select id="cable">
+  <option>Cat5e</option>
+  <option>Cat6</option>
+  <option>Cat6A</option>
+</select>
+
+<select id="task">
+  <option>Cable Installation</option>
+  <option>Terminate Outlets Field</option>
+  <option>Terminate Outlets Rack</option>
+  <option>Patching</option>
+  <option>Testing/Certifying</option>
+</select>
+
+<button id="addBtn" type="button">➕ Add Entry</button>
+
+<h3>Total Hours: <span id="total">0</span></h3>
+
+<!-- Week Selector -->
+<div id="weekSelector" class="week-selector"></div>
+
+<!-- Weekly Entries Display -->
+<div id="weeksList"></div>
+
+<!-- EDIT MODAL -->
+<div id="editModal" class="edit-modal">
+  <div class="edit-modal-content">
+    <span class="close">&times;</span>
+    <h3>Edit Entry</h3>
+    <input id="editDate" type="date">
+    <input id="editJob" placeholder="Job" type="text">
+    <input id="editWork" placeholder="Work" type="text">
+    <input id="editHours" type="number" placeholder="Hours" step="0.5" min="0">
+    <select id="editCable">
+      <option>Cat5e</option>
+      <option>Cat6</option>
+      <option>Cat6A</option>
+    </select>
+    <select id="editTask">
+      <option>Cable Installation</option>
+      <option>Terminate Outlets Field</option>
+      <option>Terminate Outlets Rack</option>
+      <option>Patching</option>
+      <option>Testing/Certifying</option>
+    </select>
+    <div class="modal-buttons">
+      <button id="saveEditBtn" type="button">✅ Save</button>
+      <button id="cancelEditBtn" type="button">❌ Cancel</button>
+    </div>
+  </div>
+</div>
+
+<script>
+
+// ✅ LOAD SAVED DATA
+let entries = JSON.parse(localStorage.getItem("logbook")) || [];
+let weeklySignatures = JSON.parse(localStorage.getItem("weeklySignatures")) || {};
+let editingIndex = -1;
+let currentWeek = null;
+
+// ✅ DARK MODE
+document.getElementById("darkModeBtn").onclick = function () {
+  document.body.classList.toggle("dark-mode");
+  localStorage.setItem("darkMode", document.body.classList.contains("dark-mode"));
+};
+
+// ✅ GET WEEK STARTING DATE
+function getWeekStart(date) {
+  const d = new Date(date);
+  const day = d.getDay();
+  const diff = d.getDate() - day;
+  d.setDate(diff);
+  d.setHours(0, 0, 0, 0);
+  return d.toISOString().split("T")[0];
+}
+
+// ✅ GET WEEK ENDING DATE
+function getWeekEnd(date) {
+  const d = new Date(date);
+  const day = d.getDay();
+  const diff = d.getDate() - day + 6;
+  d.setDate(diff);
+  d.setHours(23, 59, 59, 999);
+  return d.toISOString().split("T")[0];
+}
+
+// ✅ GET ALL WEEKS WITH ENTRIES
+function getAllWeeks() {
+  const weeks = {};
+  entries.forEach(e => {
+    const weekStart = getWeekStart(e.date);
+    if (!weeks[weekStart]) {
+      weeks[weekStart] = [];
+    }
+    weeks[weekStart].push(e);
+  });
+  return Object.keys(weeks).sort().reverse();
+}
+
+// ✅ GET ENTRIES FOR WEEK
+function getWeekEntries(weekStart) {
+  return entries.filter(e => getWeekStart(e.date) === weekStart);
+}
+
+// ✅ SHOW STATUS MESSAGE
+function showStatus(message, type) {
+  const msg = document.getElementById("statusMsg");
+  msg.innerText = message;
+  msg.className = `status-message ${type}`;
+  setTimeout(() => {
+    msg.className = "status-message";
+  }, 3000);
+}
+
+// ✅ EXPORT CSV
+document.getElementById("exportBtn").onclick = function () {
+  if (entries.length === 0) {
+    showStatus("No entries to export", "error");
+    return;
+  }
+
+  let csv = "Date,Job,Work,Cable,Task,Hours,Week Supervisor,Licence Number\n";
+  entries.forEach(e => {
+    const weekStart = getWeekStart(e.date);
+    const sigData = weeklySignatures[weekStart] || {};
+    csv += `"${e.date}","${e.job}","${e.work}","${e.cable}","${e.task}",${e.hours},"${sigData.supervisorName || ''}","${sigData.licenceNumber || ''}"\n`;
+  });
+
+  const link = document.createElement("a");
+  link.href = "data:text/csv;charset=utf-8," + encodeURIComponent(csv);
+  link.download = "logbook_export_" + new Date().toISOString().split("T")[0] + ".csv";
+  link.click();
+  
+  showStatus("CSV exported successfully", "success");
+};
+
+// ✅ RESET ALL DATA
+document.getElementById("resetBtn").onclick = function () {
+  if (confirm("⚠️ ARE YOU SURE? This will delete ALL entries and signatures. This cannot be undone!")) {
+    if (confirm("Last chance to cancel. Delete EVERYTHING?")) {
+      entries = [];
+      weeklySignatures = {};
+      localStorage.removeItem("logbook");
+      localStorage.removeItem("weeklySignatures");
+      render();
+      showStatus("All data cleared", "success");
+    }
+  }
+};
+
+// ✅ EDIT MODAL
+const editModal = document.getElementById("editModal");
+const closeBtn = document.querySelector(".close");
+
+closeBtn.onclick = function () {
+  editModal.style.display = "none";
+};
+
+window.onclick = function (event) {
+  if (event.target == editModal) {
+    editModal.style.display = "none";
+  }
+};
+
+// ✅ OPEN EDIT MODAL
+function openEditModal(index) {
+  editingIndex = index;
+  const e = entries[index];
+  
+  document.getElementById("editDate").value = e.date;
+  document.getElementById("editJob").value = e.job;
+  document.getElementById("editWork").value = e.work;
+  document.getElementById("editHours").value = e.hours;
+  document.getElementById("editCable").value = e.cable;
+  document.getElementById("editTask").value = e.task;
+  
+  editModal.style.display = "block";
+}
+
+// ✅ SAVE EDIT
+document.getElementById("saveEditBtn").onclick = function () {
+  const date = document.getElementById("editDate").value;
+  const job = document.getElementById("editJob").value;
+  const work = document.getElementById("editWork").value;
+  const cable = document.getElementById("editCable").value;
+  const task = document.getElementById("editTask").value;
+  const hours = parseFloat(document.getElementById("editHours").value);
+
+  if (!hours || hours <= 0) {
+    showStatus("Enter valid hours", "error");
+    return;
+  }
+
+  entries[editingIndex] = { date, job, work, cable, task, hours };
+  saveData();
+  render();
+  editModal.style.display = "none";
+  showStatus("Entry updated", "success");
+};
+
+document.getElementById("cancelEditBtn").onclick = function () {
+  editModal.style.display = "none";
+};
+
+// ✅ AUTO DATE & LOAD NAME AND EMPLOYER
+window.onload = function () {
+  if (localStorage.getItem("darkMode") === "true") {
+    document.body.classList.add("dark-mode");
+  }
+
+  let today = new Date().toISOString().split("T")[0];
+  document.getElementById("date").value = today;
+  
+  // ✅ LOAD NAME FROM STORAGE
+  let savedName = localStorage.getItem("userName");
+  if (savedName) {
+    document.getElementById("name").value = savedName;
+  }
+  
+  // ✅ LOAD EMPLOYER FROM STORAGE
+  let savedEmployer = localStorage.getItem("employer");
+  if (savedEmployer) {
+    document.getElementById("employer").value = savedEmployer;
+  }
+  
+  currentWeek = getWeekStart(today);
+  render();
+};
+
+// ✅ SAVE NAME ON CHANGE
+document.getElementById("name").onchange = function () {
+  localStorage.setItem("userName", this.value);
+};
+
+// ✅ SAVE EMPLOYER ON CHANGE
+document.getElementById("employer").onchange = function () {
+  localStorage.setItem("employer", this.value);
+};
+
+// ✅ SAVE FUNCTION
+function saveData() {
+  localStorage.setItem("logbook", JSON.stringify(entries));
+}
+
+// ✅ SAVE WEEKLY SIGNATURE
+function saveWeeklySignature(weekStart, supervisorName, licenceNumber, signatureImage) {
+  weeklySignatures[weekStart] = {
+    supervisorName,
+    licenceNumber,
+    signature: signatureImage,
+    date: new Date().toISOString()
+  };
+  localStorage.setItem("weeklySignatures", JSON.stringify(weeklySignatures));
+}
+
+// ✅ ADD ENTRY
+document.getElementById("addBtn").onclick = function () {
+
+  let date = document.getElementById("date").value;
+  let job = document.getElementById("job").value;
+  let work = document.getElementById("work").value;
+  let cable = document.getElementById("cable").value;
+  let task = document.getElementById("task").value;
+  let hours = parseFloat(document.getElementById("hours").value);
+
+  if (!hours || hours <= 0) {
+    showStatus("Enter valid hours", "error");
+    return;
+  }
+
+  entries.push({ date, job, work, cable, task, hours });
+
+  saveData();
+  render();
+  
+  document.getElementById("job").value = "";
+  document.getElementById("work").value = "";
+  document.getElementById("hours").value = "";
+  
+  showStatus("Entry added", "success");
+};
+
+// ✅ DELETE ENTRY
+function deleteEntry(index) {
+  if (confirm("Delete this entry? This cannot be undone.")) {
+    entries.splice(index, 1);
+    saveData();
+    render();
+    showStatus("Entry deleted", "success");
+  }
+}
+
+// ✅ RENDER
+function render() {
+
+  let total = 0;
+  entries.forEach(e => {
+    total += e.hours;
+  });
+  document.getElementById("total").innerText = total;
+
+  // Render week selector
+  const allWeeks = getAllWeeks();
+  const weekSelector = document.getElementById("weekSelector");
+  weekSelector.innerHTML = "";
+  
+  if (allWeeks.length === 0) {
+    currentWeek = null;
+  } else {
+    allWeeks.forEach(weekStart => {
+      const btn = document.createElement("button");
+      const weekEnd = getWeekEnd(weekStart);
+      btn.textContent = `📅 ${weekStart}`;
+      btn.onclick = () => {
+        currentWeek = weekStart;
+        document.querySelectorAll(".week-selector button").forEach(b => b.classList.remove("active"));
+        btn.classList.add("active");
+        renderWeeksList();
+      };
+      if (!currentWeek) {
+        currentWeek = allWeeks[0];
+      }
+      if (currentWeek === weekStart) {
+        btn.classList.add("active");
+      }
+      weekSelector.appendChild(btn);
+    });
+  }
+
+  renderWeeksList();
+}
+
+function renderWeeksList() {
+  const weeksList = document.getElementById("weeksList");
+  weeksList.innerHTML = "";
+
+  if (!currentWeek) {
+    return;
+  }
+
+  const weekEntries = getWeekEntries(currentWeek);
+  const weekEnd = getWeekEnd(currentWeek);
+  const sigData = weeklySignatures[currentWeek] || {};
+  const isSigned = !!sigData.signature;
+
+  let weekTotal = 0;
+  weekEntries.forEach(e => {
+    weekTotal += e.hours;
+  });
+
+  // Create week section
+  const weekSection = document.createElement("div");
+  weekSection.className = "week-section";
+
+  // Week header
+  const header = document.createElement("div");
+  header.className = `week-header ${isSigned ? "signed" : "unsigned"}`;
+  header.innerHTML = `📅 Week: ${currentWeek} to ${weekEnd} ${isSigned ? "✅ SIGNED" : "⏳ PENDING"}`;
+  weekSection.appendChild(header);
+
+  // Week totals
+  const totalsDiv = document.createElement("div");
+  totalsDiv.className = "week-totals";
+  totalsDiv.innerHTML = `
+    <div class="week-total-item">
+      <span>Entries</span>
+      <b>${weekEntries.length}</b>
+    </div>
+    <div class="week-total-item">
+      <span>Hours</span>
+      <b>${weekTotal}</b>
+    </div>
+  `;
+  weekSection.appendChild(totalsDiv);
+
+  // Entries
+  const entriesDiv = document.createElement("div");
+  let entryIndexMap = {};
+  entries.forEach((e, idx) => {
+    if (getWeekStart(e.date) === currentWeek) {
+      entryIndexMap[idx] = true;
+    }
+  });
+
+  weekEntries.forEach((e, weekIndex) => {
+    const globalIndex = entries.indexOf(e);
+    const entryDiv = document.createElement("div");
+    entryDiv.className = "entry";
+    entryDiv.innerHTML = `
+      <b>${e.date}</b> - ${e.job}
+      <br>${e.work}
+      <br>${e.cable} | ${e.task}
+      <br>${e.hours} hrs
+    `;
+
+    const buttonsDiv = document.createElement("div");
+    buttonsDiv.className = "entry-buttons";
+    
+    const editBtn = document.createElement("button");
+    editBtn.textContent = "✏️ Edit";
+    editBtn.onclick = () => openEditModal(globalIndex);
+    
+    const deleteBtn = document.createElement("button");
+    deleteBtn.textContent = "❌ Delete";
+    deleteBtn.onclick = () => deleteEntry(globalIndex);
+    
+    buttonsDiv.appendChild(editBtn);
+    buttonsDiv.appendChild(deleteBtn);
+    entryDiv.appendChild(buttonsDiv);
+    entriesDiv.appendChild(entryDiv);
+  });
+
+  weekSection.appendChild(entriesDiv);
+
+  // Supervisor sign-off section
+  if (isSigned) {
+    // Show signed supervisor info
+    const signedDiv = document.createElement("div");
+    signedDiv.className = "supervisor-info signed";
+    signedDiv.innerHTML = `
+      <div class="supervisor-name">✅ Supervisor: ${sigData.supervisorName}</div>
+      <div>Licence: ${sigData.licenceNumber}</div>
+      <div><small>Signed: ${new Date(sigData.date).toLocaleString()}</small></div>
+      <div class="signature-display">
+        <img src="${sigData.signature}" alt="Supervisor Signature">
+      </div>
+    `;
+    weekSection.appendChild(signedDiv);
+  } else {
+   // Show signature input form
+    const sigSection = document.createElement("div");
+    sigSection.className = "signature-section";
+    sigSection.innerHTML = `
+      <h3>✍️ Supervisor Sign-Off</h3>
+      <input id="sup-name-${currentWeek}" placeholder="Supervisor Name" type="text" value="">
+      <input id="sup-licence-${currentWeek}" placeholder="Licence Number" type="text" value="">
+      <p><b>Signature:</b></p>
+      <canvas id="sig-canvas-${currentWeek}" class="sig-canvas"></canvas></canvas>
+      <div class="button-group">
+        <button onclick="clearSignature('${currentWeek}')" type="button">🔄 Clear</button>
+        <button onclick="saveSignature('${currentWeek}')" type="button">✅ Save Sig</button>
+      </div>
+      <p id="sig-status-${currentWeek}"></p>
+    `;
+    weekSection.appendChild(sigSection);
+  }
+
+  // Action buttons - View for Print only
+  const actionDiv = document.createElement("div");
+  actionDiv.className = "action-buttons";
+  
+  const viewBtn = document.createElement("button");
+  viewBtn.textContent = "👁️ View for Print";
+  viewBtn.onclick = () => generatePrintContent(currentWeek);
+  
+  actionDiv.appendChild(viewBtn);
+  weekSection.appendChild(actionDiv);
+
+  weeksList.appendChild(weekSection);
+
+  // Setup canvas if not signed
+  if (!isSigned) {
+    setTimeout(() => {
+      setupCanvas(currentWeek, null);
+    }, 100);
+  }
+}
+
+let canvasState = {};
+
+function setupCanvas(weekStart, existingSignature) {
+  const canvasId = `sig-canvas-${weekStart}`;
+  const canvas = document.getElementById(canvasId);
+  if (!canvas) return;
+
+  const ctx = canvas.getContext("2d");
+  const rect = canvas.getBoundingClientRect();
+  const dpr = window.devicePixelRatio || 1;
+
+  // ✅ Fix scaling issue
+  canvas.width = rect.width * dpr;
+  canvas.height = rect.height * dpr;
+
+  ctx.setTransform(1, 0, 0, 1, 0, 0); // reset transform
+  ctx.scale(dpr, dpr);
+
+  ctx.lineWidth = 2;
+  ctx.lineCap = "round";
+  ctx.lineJoin = "round";
+
+  canvasState[weekStart] = {
+    canvas,
+    ctx,
+    isDrawing: false,
+    signatureImage: existingSignature || null
+  };
+
+  function startDrawing(e) {
+    canvasState[weekStart].isDrawing = true;
+    const rect = canvas.getBoundingClientRect();
+    const x = (e.clientX || e.touches[0].clientX) - rect.left;
+    const y = (e.clientY || e.touches[0].clientY) - rect.top;
+    ctx.beginPath();
+    ctx.moveTo(x, y);
+  }
+
+  function draw(e) {
+    if (!canvasState[weekStart].isDrawing) return;
+    e.preventDefault();
+    const rect = canvas.getBoundingClientRect();
+    const x = (e.clientX || e.touches[0].clientX) - rect.left;
+    const y = (e.clientY || e.touches[0].clientY) - rect.top;
+    ctx.lineTo(x, y);
+    ctx.stroke();
+  }
+
+  function stopDrawing() {
+    canvasState[weekStart].isDrawing = false;
+  }
+
+  canvas.addEventListener("mousedown", startDrawing);
+  canvas.addEventListener("mousemove", draw);
+  canvas.addEventListener("mouseup", stopDrawing);
+  canvas.addEventListener("mouseout", stopDrawing);
+
+  canvas.addEventListener("touchstart", (e) => { e.preventDefault(); startDrawing(e); });
+  canvas.addEventListener("touchmove", (e) => { e.preventDefault(); draw(e); });
+  canvas.addEventListener("touchend", () => stopDrawing());
+}
+``
+
+function clearSignature(weekStart) {
+  if (!canvasState[weekStart]) return;
+  const { canvas, ctx } = canvasState[weekStart];
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  canvasState[weekStart].signatureImage = null;
+  document.getElementById(`sig-status-${weekStart}`).innerText = "";
+}
+
+function saveSignature(weekStart) {
+  const supervisorName = document.getElementById(`sup-name-${weekStart}`).value.trim();
+  const licenceNumber = document.getElementById(`sup-licence-${weekStart}`).value.trim();
+
+  if (!supervisorName || !licenceNumber) {
+    alert("Please enter Supervisor Name and Licence Number");
+    return;
+  }
+
+  if (!canvasState[weekStart]) return;
+  const canvas = canvasState[weekStart].canvas;
+  
+  // Check if signature was drawn
+  const imageData = canvas.getContext("2d").getImageData(0, 0, canvas.width, canvas.height).data;
+  let hasDrawing = false;
+  for (let i = 3; i < imageData.length; i += 4) {
+    if (imageData[i] > 128) {
+      hasDrawing = true;
+      break;
+    }
+  }
+
+  if (!hasDrawing) {
+    alert("Please draw a signature before saving");
+    return;
+  }
+
+  const signatureImage = canvas.toDataURL("image/png");
+  saveWeeklySignature(weekStart, supervisorName, licenceNumber, signatureImage);
+  render();
+  showStatus("Signature saved successfully", "success");
+}
+
+function generatePrintContent(weekStart) {
+  const weekEnd = getWeekEnd(weekStart);
+  const weekEntries = getWeekEntries(weekStart);
+  const sigData = weeklySignatures[weekStart] || {};
+
+  let total = 0;
+  let weekTotal = 0;
+  entries.forEach(e => total += e.hours);
+  weekEntries.forEach(e => weekTotal += e.hours);
+
+  let rows = "";
+  weekEntries.forEach(e => {
+    rows += "<tr>" +
+      "<td style='border: 1px solid #000; padding: 8px;'>" + e.date + "</td>" +
+      "<td style='border: 1px solid #000; padding: 8px;'>" + e.job + "</td>" +
+      "<td style='border: 1px solid #000; padding: 8px;'>" + e.work + "</td>" +
+      "<td style='border: 1px solid #000; padding: 8px;'>" + e.cable + "</td>" +
+      "<td style='border: 1px solid #000; padding: 8px;'>" + e.task + "</td>" +
+      "<td style='border: 1px solid #000; padding: 8px;'>" + e.hours + "</td>" +
+      "</tr>";
+  });
+
+  let content =
+    "<html><head><meta charset='UTF-8'><title>Cabling Logbook</title><style>@media print { .print-controls { display: none !important; } }</style></head>" +
+    "<body style='font-family:Arial;padding:30px'>" +
+    "<div class='print-controls' style='margin-bottom:20px;'>" +
+    "<button onclick='window.print()' style='padding:12px 24px;font-size:16px;cursor:pointer;'>🖨️ Print</button> " +
+    "<button onclick='window.close()' style='padding:12px 24px;font-size:16px;cursor:pointer;'>❌ Close</button>" +
+    "</div>" +
+    "<h1 style='text-align:center'>CABLING LOGBOOK</h1>" +
+    "<p><b>Name:</b> " + document.getElementById("name").value + "</p>" +
+    "<p><b>Employer:</b> " + document.getElementById("employer").value + "</p>" +
+    "<p><b>Week:</b> " + weekStart + " to " + weekEnd + "</p>" +
+    "<h3>Total Hours: " + total + " / 360</h3>" +
+    "<h3>Week Hours: " + weekTotal + "</h3>" +
+    "<h3>Work Log</h3>" +
+    "<table style='width:100%;border-collapse:collapse;'>" +
+    "<tr style='background-color:#f0f0f0;'><th style='border: 1px solid #000; padding: 8px;'>Date</th><th style='border: 1px solid #000; padding: 8px;'>Job</th><th style='border: 1px solid #000; padding: 8px;'>Work</th><th style='border: 1px solid #000; padding: 8px;'>Cable</th><th style='border: 1px solid #000; padding: 8px;'>Task</th><th style='border: 1px solid #000; padding: 8px;'>Hours</th></tr>" +
+    rows +
+    "</table>" +
+    "<br><hr><br>" +
+    "<h3>Weekly Sign-Off</h3>";
+
+  if (sigData.signature) {
+    content += "<p><b>Supervisor:</b> " + sigData.supervisorName + "</p>" +
+      "<p><b>Licence Number:</b> " + sigData.licenceNumber + "</p>" +
+      "<p><b>Signature:</b></p>" +
+      "<img src='" + sigData.signature + "' style='max-width:300px;height:auto;border:1px solid #000;'>" +
+      "<p><small>Signed: " + new Date(sigData.date).toLocaleString() + "</small></p>";
+  } else {
+    content += "<p>Supervisor Name: __________</p>" +
+      "<p>Licence Number: __________</p>" +
+      "<p>Signature:</p>" +
+      "<div style='border:1px solid black;height:80px;width:250px'></div>";
+  }
+
+  content += "<br><p style='text-align:center;'><b>Use Print button above or Ctrl+P to save as PDF</b></p>" +
+    "</body></html>";
+
+  const w = window.open("");
+  w.document.write(content);
+  w.document.close();
+}
+
+</script>
+
+</body>
+</html>
