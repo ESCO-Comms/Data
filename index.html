@@ -480,6 +480,29 @@ body.dark-mode .info-box {
   page-break-inside: avoid;
 }
 
+.print-supervisor-info {
+  background-color: #f9f9f9;
+  padding: 12px;
+  margin: 15px 0;
+  border-left: 4px solid #4CAF50;
+  font-size: 13px;
+  page-break-inside: avoid;
+}
+
+.print-supervisor-sig {
+  margin-top: 10px;
+  text-align: center;
+  border-top: 1px solid #ccc;
+  padding-top: 10px;
+}
+
+.print-supervisor-sig img {
+  max-width: 200px;
+  height: auto;
+  border: 1px solid #ccc;
+  padding: 5px;
+}
+
 .print-grand-total {
   text-align: right;
   font-size: 20px;
@@ -794,6 +817,7 @@ function openPrintView() {
   allWeeks.forEach(weekStart => {
     const weekEnd = getWeekEnd(weekStart);
     const weekEntries = getWeekEntries(weekStart);
+    const sigData = weeklySignatures[weekStart] || {};
     let weekTotal = 0;
     
     weekEntries.forEach(e => {
@@ -817,6 +841,25 @@ function openPrintView() {
     });
     
     html += `<div class="print-week-total">Week Total: ${weekTotal} hours</div>`;
+    
+    // Add supervisor signature info if available
+    if (sigData.supervisorName) {
+      html += `
+        <div class="print-supervisor-info">
+          <strong>✅ Signed Off</strong><br>
+          <strong>Supervisor:</strong> ${sigData.supervisorName}<br>
+          <strong>Licence Number:</strong> ${sigData.licenceNumber}<br>
+          <strong>Date Signed:</strong> ${new Date(sigData.date).toLocaleDateString()}
+      `;
+      if (sigData.signature) {
+        html += `
+          <div class="print-supervisor-sig">
+            <img src="${sigData.signature}" alt="Supervisor Signature">
+          </div>
+        `;
+      }
+      html += `</div>`;
+    }
   });
   
   html += `<div class="print-grand-total">TOTAL HOURS: ${grandTotal}</div>`;
@@ -1102,7 +1145,162 @@ function renderWeeksList() {
   });
 
   weekSection.appendChild(entriesDiv);
+
+  // Supervisor sign-off section
+  if (isSigned) {
+    const signedDiv = document.createElement("div");
+    signedDiv.className = "supervisor-info signed";
+    signedDiv.innerHTML = `
+      <div class="supervisor-name">✅ Supervisor: ${sigData.supervisorName}</div>
+      <div>Licence Number: ${sigData.licenceNumber}</div>
+      <div><small>Signed: ${new Date(sigData.date).toLocaleDateString()}</small></div>
+      <div class="signature-display">
+        <img src="${sigData.signature}" alt="Supervisor Signature">
+      </div>
+    `;
+    weekSection.appendChild(signedDiv);
+  } else {
+    const sigSection = document.createElement("div");
+    sigSection.className = "signature-section";
+    sigSection.innerHTML = `
+      <h3>✏️ Supervisor Sign-Off</h3>
+      <input id="sup-name-${currentWeek}" placeholder="Supervisor Name" type="text" value="">
+      <input id="sup-licence-${currentWeek}" placeholder="Licence Number" type="text" value="">
+      <p><b>Signature:</b></p>
+      <canvas id="sig-canvas-${currentWeek}" class="sig-canvas"></canvas>
+      <div class="button-group">
+        <button onclick="clearSignature('${currentWeek}')" type="button">🔄 Clear</button>
+        <button onclick="saveSignature('${currentWeek}')" type="button">✅ Save Sig</button>
+      </div>
+      <p id="sig-status-${currentWeek}"></p>
+    `;
+    weekSection.appendChild(sigSection);
+  }
+
   weeksList.appendChild(weekSection);
+
+  // Setup canvas if not signed
+  if (!isSigned) {
+    setTimeout(() => {
+      setupCanvas(currentWeek, null);
+    }, 100);
+  }
+}
+
+let canvasState = {};
+
+function setupCanvas(weekStart, existingSignature) {
+  const canvasId = `sig-canvas-${weekStart}`;
+  const canvas = document.getElementById(canvasId);
+  if (!canvas) return;
+
+  const ctx = canvas.getContext("2d");
+  
+  // Get the display size of the canvas
+  const style = window.getComputedStyle(canvas);
+  const displayWidth = parseInt(style.width);
+  const displayHeight = parseInt(style.height);
+  
+  // Set the canvas resolution to match display size
+  const dpr = window.devicePixelRatio || 1;
+  canvas.width = displayWidth * dpr;
+  canvas.height = displayHeight * dpr;
+  
+  // Scale context to match device pixel ratio
+  ctx.scale(dpr, dpr);
+  
+  // Set drawing styles
+  ctx.lineWidth = 2;
+  ctx.lineCap = "round";
+  ctx.lineJoin = "round";
+  ctx.strokeStyle = "#000000";
+
+  canvasState[weekStart] = {
+    canvas,
+    ctx,
+    isDrawing: false,
+    dpr: dpr,
+    displayWidth: displayWidth,
+    displayHeight: displayHeight,
+    signatureImage: existingSignature || null
+  };
+
+  function getCoordinates(e) {
+    const rect = canvas.getBoundingClientRect();
+    const clientX = e.clientX !== undefined ? e.clientX : (e.touches && e.touches[0] ? e.touches[0].clientX : 0);
+    const clientY = e.clientY !== undefined ? e.clientY : (e.touches && e.touches[0] ? e.touches[0].clientY : 0);
+    
+    return {
+      x: clientX - rect.left,
+      y: clientY - rect.top
+    };
+  }
+
+  function startDrawing(e) {
+    e.preventDefault();
+    canvasState[weekStart].isDrawing = true;
+    const coords = getCoordinates(e);
+    ctx.beginPath();
+    ctx.moveTo(coords.x, coords.y);
+  }
+
+  function draw(e) {
+    e.preventDefault();
+    if (!canvasState[weekStart].isDrawing) return;
+    const coords = getCoordinates(e);
+    ctx.lineTo(coords.x, coords.y);
+    ctx.stroke();
+  }
+
+  function stopDrawing(e) {
+    e.preventDefault();
+    canvasState[weekStart].isDrawing = false;
+    ctx.closePath();
+  }
+
+  canvas.addEventListener("mousedown", startDrawing);
+  canvas.addEventListener("mousemove", draw);
+  canvas.addEventListener("mouseup", stopDrawing);
+  canvas.addEventListener("mouseout", stopDrawing);
+
+  canvas.addEventListener("touchstart", startDrawing);
+  canvas.addEventListener("touchmove", draw);
+  canvas.addEventListener("touchend", stopDrawing);
+}
+
+function clearSignature(weekStart) {
+  const canvas = document.getElementById(`sig-canvas-${weekStart}`);
+  if (!canvas) return;
+  const ctx = canvas.getContext("2d");
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  canvasState[weekStart].signatureImage = null;
+  document.getElementById(`sig-status-${weekStart}`).innerHTML = "";
+}
+
+function saveSignature(weekStart) {
+  const supName = document.getElementById(`sup-name-${weekStart}`).value;
+  const supLicence = document.getElementById(`sup-licence-${weekStart}`).value;
+  const canvas = document.getElementById(`sig-canvas-${weekStart}`);
+
+  if (!supName || !supLicence) {
+    showStatus("Please enter supervisor name and licence number", "error");
+    return;
+  }
+
+  // Check if signature has been drawn
+  const canvasData = canvas.toDataURL();
+  const blankCanvas = document.createElement("canvas");
+  blankCanvas.width = canvas.width;
+  blankCanvas.height = canvas.height;
+  
+  if (canvasData === blankCanvas.toDataURL()) {
+    showStatus("Please draw a signature", "error");
+    return;
+  }
+
+  saveWeeklySignature(weekStart, supName, supLicence, canvasData);
+  render();
+  showStatus("Signature saved successfully", "success");
 }
 
 </script>
