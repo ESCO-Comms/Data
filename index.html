@@ -206,8 +206,8 @@ input, select {
   border: 1px solid var(--border-color);
 }
 
-#signatureCanvas {
- border: 2px solid var(--border-color);
+.sig-canvas {
+  border: 2px solid var(--border-color);
   display: block;
   margin: 15px auto;
   touch-action: none;
@@ -215,10 +215,9 @@ input, select {
   cursor: crosshair;
   width: 100%;
   max-width: 100%;
-  height: 150px;
+  height: 200px;
   border-radius: 6px;
 }
-
 
 .signature-section {
   overflow-x: hidden;
@@ -423,9 +422,9 @@ body.dark-mode .info-box {
     min-width: auto;
   }
   
-  #signatureCanvas {
-    height: 120px;
-    max-width: 350px;
+  .sig-canvas {
+    height: 150px;
+    max-width: 400px;
   }
   
   .week-selector button {
@@ -918,7 +917,7 @@ function renderWeeksList() {
       <input id="sup-name-${currentWeek}" placeholder="Supervisor Name" type="text" value="">
       <input id="sup-licence-${currentWeek}" placeholder="Licence Number" type="text" value="">
       <p><b>Signature:</b></p>
-      <canvas id="sig-canvas-${currentWeek}" class="sig-canvas"></canvas></canvas>
+      <canvas id="sig-canvas-${currentWeek}" class="sig-canvas"></canvas>
       <div class="button-group">
         <button onclick="clearSignature('${currentWeek}')" type="button">🔄 Clear</button>
         <button onclick="saveSignature('${currentWeek}')" type="button">✅ Save Sig</button>
@@ -957,167 +956,146 @@ function setupCanvas(weekStart, existingSignature) {
   if (!canvas) return;
 
   const ctx = canvas.getContext("2d");
-  const rect = canvas.getBoundingClientRect();
+  
+  // Get the display size of the canvas
+  const style = window.getComputedStyle(canvas);
+  const displayWidth = parseInt(style.width);
+  const displayHeight = parseInt(style.height);
+  
+  // Set the canvas resolution to match display size
   const dpr = window.devicePixelRatio || 1;
-
-  // ✅ Fix scaling issue
-  canvas.width = rect.width * dpr;
-  canvas.height = rect.height * dpr;
-
-  ctx.setTransform(1, 0, 0, 1, 0, 0); // reset transform
+  canvas.width = displayWidth * dpr;
+  canvas.height = displayHeight * dpr;
+  
+  // Scale context to match device pixel ratio
   ctx.scale(dpr, dpr);
-
+  
+  // Set drawing styles
   ctx.lineWidth = 2;
   ctx.lineCap = "round";
   ctx.lineJoin = "round";
+  ctx.strokeStyle = "#000000";
 
   canvasState[weekStart] = {
     canvas,
     ctx,
     isDrawing: false,
+    dpr: dpr,
+    displayWidth: displayWidth,
+    displayHeight: displayHeight,
     signatureImage: existingSignature || null
   };
 
-  function startDrawing(e) {
-    canvasState[weekStart].isDrawing = true;
+  function getCoordinates(e) {
     const rect = canvas.getBoundingClientRect();
-    const x = (e.clientX || e.touches[0].clientX) - rect.left;
-    const y = (e.clientY || e.touches[0].clientY) - rect.top;
+    const clientX = e.clientX !== undefined ? e.clientX : (e.touches && e.touches[0] ? e.touches[0].clientX : 0);
+    const clientY = e.clientY !== undefined ? e.clientY : (e.touches && e.touches[0] ? e.touches[0].clientY : 0);
+    
+    return {
+      x: clientX - rect.left,
+      y: clientY - rect.top
+    };
+  }
+
+  function startDrawing(e) {
+    e.preventDefault();
+    canvasState[weekStart].isDrawing = true;
+    const coords = getCoordinates(e);
     ctx.beginPath();
-    ctx.moveTo(x, y);
+    ctx.moveTo(coords.x, coords.y);
   }
 
   function draw(e) {
     if (!canvasState[weekStart].isDrawing) return;
     e.preventDefault();
-    const rect = canvas.getBoundingClientRect();
-    const x = (e.clientX || e.touches[0].clientX) - rect.left;
-    const y = (e.clientY || e.touches[0].clientY) - rect.top;
-    ctx.lineTo(x, y);
+    const coords = getCoordinates(e);
+    ctx.lineTo(coords.x, coords.y);
     ctx.stroke();
   }
 
-  function stopDrawing() {
+  function stopDrawing(e) {
+    e.preventDefault();
     canvasState[weekStart].isDrawing = false;
   }
 
+  // Mouse events
   canvas.addEventListener("mousedown", startDrawing);
   canvas.addEventListener("mousemove", draw);
   canvas.addEventListener("mouseup", stopDrawing);
   canvas.addEventListener("mouseout", stopDrawing);
-
-  canvas.addEventListener("touchstart", (e) => { e.preventDefault(); startDrawing(e); });
-  canvas.addEventListener("touchmove", (e) => { e.preventDefault(); draw(e); });
-  canvas.addEventListener("touchend", () => stopDrawing());
+  
+  // Touch events
+  canvas.addEventListener("touchstart", startDrawing, { passive: false });
+  canvas.addEventListener("touchmove", draw, { passive: false });
+  canvas.addEventListener("touchend", stopDrawing, { passive: false });
+  canvas.addEventListener("touchcancel", stopDrawing, { passive: false });
 }
-``
 
-function clearSignature(weekStart) {
-  if (!canvasState[weekStart]) return;
-  const { canvas, ctx } = canvasState[weekStart];
+// ✅ CLEAR SIGNATURE
+window.clearSignature = function(weekStart) {
+  const canvasId = `sig-canvas-${weekStart}`;
+  const canvas = document.getElementById(canvasId);
+  if (!canvas) return;
+  
+  const ctx = canvas.getContext("2d");
   ctx.clearRect(0, 0, canvas.width, canvas.height);
   canvasState[weekStart].signatureImage = null;
-  document.getElementById(`sig-status-${weekStart}`).innerText = "";
-}
+};
 
-function saveSignature(weekStart) {
-  const supervisorName = document.getElementById(`sup-name-${weekStart}`).value.trim();
-  const licenceNumber = document.getElementById(`sup-licence-${weekStart}`).value.trim();
-
+// ✅ SAVE SIGNATURE
+window.saveSignature = function(weekStart) {
+  const supNameId = `sup-name-${weekStart}`;
+  const supLicenceId = `sup-licence-${weekStart}`;
+  const canvasId = `sig-canvas-${weekStart}`;
+  
+  const supervisorName = document.getElementById(supNameId).value.trim();
+  const licenceNumber = document.getElementById(supLicenceId).value.trim();
+  const canvas = document.getElementById(canvasId);
+  
   if (!supervisorName || !licenceNumber) {
-    alert("Please enter Supervisor Name and Licence Number");
+    showStatus("Please fill in supervisor name and licence number", "error");
     return;
   }
-
-  if (!canvasState[weekStart]) return;
-  const canvas = canvasState[weekStart].canvas;
   
-  // Check if signature was drawn
-  const imageData = canvas.getContext("2d").getImageData(0, 0, canvas.width, canvas.height).data;
-  let hasDrawing = false;
-  for (let i = 3; i < imageData.length; i += 4) {
-    if (imageData[i] > 128) {
-      hasDrawing = true;
+  if (!canvas) {
+    showStatus("Canvas not found", "error");
+    return;
+  }
+  
+  const signatureImage = canvas.toDataURL("image/png");
+  
+  // Check if signature is blank (all white pixels)
+  const ctx = canvas.getContext("2d");
+  const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+  const data = imageData.data;
+  let isBlank = true;
+  for (let i = 0; i < data.length; i += 4) {
+    if (data[i + 3] > 128) { // Check alpha channel
+      isBlank = false;
       break;
     }
   }
-
-  if (!hasDrawing) {
-    alert("Please draw a signature before saving");
+  
+  if (isBlank) {
+    showStatus("Please draw a signature", "error");
     return;
   }
-
-  const signatureImage = canvas.toDataURL("image/png");
+  
   saveWeeklySignature(weekStart, supervisorName, licenceNumber, signatureImage);
   render();
   showStatus("Signature saved successfully", "success");
-}
+};
 
+// ✅ GENERATE PRINT CONTENT (Placeholder)
 function generatePrintContent(weekStart) {
-  const weekEnd = getWeekEnd(weekStart);
-  const weekEntries = getWeekEntries(weekStart);
-  const sigData = weeklySignatures[weekStart] || {};
-
-  let total = 0;
-  let weekTotal = 0;
-  entries.forEach(e => total += e.hours);
-  weekEntries.forEach(e => weekTotal += e.hours);
-
-  let rows = "";
-  weekEntries.forEach(e => {
-    rows += "<tr>" +
-      "<td style='border: 1px solid #000; padding: 8px;'>" + e.date + "</td>" +
-      "<td style='border: 1px solid #000; padding: 8px;'>" + e.job + "</td>" +
-      "<td style='border: 1px solid #000; padding: 8px;'>" + e.work + "</td>" +
-      "<td style='border: 1px solid #000; padding: 8px;'>" + e.cable + "</td>" +
-      "<td style='border: 1px solid #000; padding: 8px;'>" + e.task + "</td>" +
-      "<td style='border: 1px solid #000; padding: 8px;'>" + e.hours + "</td>" +
-      "</tr>";
-  });
-
-  let content =
-    "<html><head><meta charset='UTF-8'><title>Cabling Logbook</title><style>@media print { .print-controls { display: none !important; } }</style></head>" +
-    "<body style='font-family:Arial;padding:30px'>" +
-    "<div class='print-controls' style='margin-bottom:20px;'>" +
-    "<button onclick='window.print()' style='padding:12px 24px;font-size:16px;cursor:pointer;'>🖨️ Print</button> " +
-    "<button onclick='window.close()' style='padding:12px 24px;font-size:16px;cursor:pointer;'>❌ Close</button>" +
-    "</div>" +
-    "<h1 style='text-align:center'>CABLING LOGBOOK</h1>" +
-    "<p><b>Name:</b> " + document.getElementById("name").value + "</p>" +
-    "<p><b>Employer:</b> " + document.getElementById("employer").value + "</p>" +
-    "<p><b>Week:</b> " + weekStart + " to " + weekEnd + "</p>" +
-    "<h3>Total Hours: " + total + " / 360</h3>" +
-    "<h3>Week Hours: " + weekTotal + "</h3>" +
-    "<h3>Work Log</h3>" +
-    "<table style='width:100%;border-collapse:collapse;'>" +
-    "<tr style='background-color:#f0f0f0;'><th style='border: 1px solid #000; padding: 8px;'>Date</th><th style='border: 1px solid #000; padding: 8px;'>Job</th><th style='border: 1px solid #000; padding: 8px;'>Work</th><th style='border: 1px solid #000; padding: 8px;'>Cable</th><th style='border: 1px solid #000; padding: 8px;'>Task</th><th style='border: 1px solid #000; padding: 8px;'>Hours</th></tr>" +
-    rows +
-    "</table>" +
-    "<br><hr><br>" +
-    "<h3>Weekly Sign-Off</h3>";
-
-  if (sigData.signature) {
-    content += "<p><b>Supervisor:</b> " + sigData.supervisorName + "</p>" +
-      "<p><b>Licence Number:</b> " + sigData.licenceNumber + "</p>" +
-      "<p><b>Signature:</b></p>" +
-      "<img src='" + sigData.signature + "' style='max-width:300px;height:auto;border:1px solid #000;'>" +
-      "<p><small>Signed: " + new Date(sigData.date).toLocaleString() + "</small></p>";
-  } else {
-    content += "<p>Supervisor Name: __________</p>" +
-      "<p>Licence Number: __________</p>" +
-      "<p>Signature:</p>" +
-      "<div style='border:1px solid black;height:80px;width:250px'></div>";
-  }
-
-  content += "<br><p style='text-align:center;'><b>Use Print button above or Ctrl+P to save as PDF</b></p>" +
-    "</body></html>";
-
-  const w = window.open("");
-  w.document.write(content);
-  w.document.close();
+  window.print();
 }
 
 </script>
+</head>
+
+<body>
 
 </body>
+
 </html>
