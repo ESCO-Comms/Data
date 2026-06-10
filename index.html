@@ -610,7 +610,6 @@ body.dark-mode .info-box {
 <div class="header-controls">
   <button id="darkModeBtn" type="button">🌙 Dark</button>
   <button id="exportBtn" type="button">📥 Export CSV</button>
-  <button id="sendDataBtn" type="button">💾 Save Backup</button>
   <button id="printReportBtn" type="button">📋 Print Report</button>
   <button id="resetBtn" type="button">🔄 Reset</button>
 </div>
@@ -620,7 +619,7 @@ body.dark-mode .info-box {
 <div id="statusMsg" class="status-message"></div>
 
 <div class="info-box">
-  <strong>📝 How it works:</strong> Add entries below, they'll be grouped by week. Each week can have a different supervisor sign-off. Use "Save Backup" to save all your data as a file on your device.
+  <strong>📝 How it works:</strong> Add entries below, they'll be grouped by week. Each week can have a different supervisor sign-off.
 </div>
 
 <!-- Details -->
@@ -807,46 +806,6 @@ document.getElementById("exportBtn").onclick = function () {
   link.click();
   
   showStatus("CSV exported successfully", "success");
-};
-
-// ✅ SAVE DATA AS JSON FILE (Works on iPhone, Android, Desktop)
-document.getElementById("sendDataBtn").onclick = function () {
-  if (entries.length === 0) {
-    showStatus("No entries to backup", "error");
-    return;
-  }
-
-  const backupData = {
-    employee_name: document.getElementById("name").value || "Not Provided",
-    employer: document.getElementById("employer").value || "Not Provided",
-    backup_date: new Date().toLocaleString(),
-    total_entries: entries.length,
-    total_hours: entries.reduce((sum, e) => sum + e.hours, 0),
-    entries: entries,
-    signatures: weeklySignatures
-  };
-
-  // Convert to JSON string with nice formatting
-  const jsonString = JSON.stringify(backupData, null, 2);
-  
-  // Create a Blob from the JSON string
-  const blob = new Blob([jsonString], { type: "application/json" });
-  
-  // Create download link
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement("a");
-  link.href = url;
-  link.download = "logbook_backup_" + new Date().toISOString().split("T")[0] + ".json";
-  
-  // Trigger download
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
-  
-  // Clean up the URL object
-  URL.revokeObjectURL(url);
-  
-  showStatus("✅ Backup saved! Check your device's Downloads folder.", "success");
 };
 
 // ✅ PRINT FULL REPORT WITH ALL WEEKS (CONDENSED)
