@@ -431,87 +431,86 @@ body.dark-mode .info-box {
   font-size: 28px;
 }
 
-.print-entry-item {
-  display: block;
-  margin-bottom: 15px;
-  padding-bottom: 15px;
-  border-bottom: 1px solid #ccc;
+.print-week-header {
+  background-color: #f0f0f0;
+  padding: 12px;
+  margin: 20px 0 12px 0;
+  border-left: 4px solid #2196F3;
+  font-weight: bold;
+  font-size: 15px;
   page-break-inside: avoid;
 }
 
-.print-entry-item:last-child {
-  border-bottom: none;
+.print-week-summary {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+  padding: 12px;
+  background-color: #f9f9f9;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  margin-bottom: 15px;
+  font-size: 13px;
+  page-break-inside: avoid;
 }
 
-.print-entry-date {
+.print-summary-item {
+  display: flex;
+  justify-content: space-between;
+}
+
+.print-summary-label {
   font-weight: bold;
-  font-size: 16px;
-  margin-bottom: 5px;
-}
-
-.print-entry-detail {
-  font-size: 14px;
-  margin: 3px 0;
   color: #333;
 }
 
-.print-entry-hours {
-  font-weight: bold;
-  font-size: 15px;
+.print-summary-value {
   color: #2196F3;
+  font-weight: 600;
 }
 
 .print-week-total {
   text-align: right;
-  font-size: 18px;
-  font-weight: bold;
-  margin-top: 30px;
-  padding-top: 20px;
-  border-top: 2px solid #000;
-}
-
-.print-week-header {
-  background-color: #f0f0f0;
-  padding: 12px;
-  margin: 25px 0 15px 0;
-  border-left: 4px solid #2196F3;
-  font-weight: bold;
   font-size: 16px;
-  page-break-inside: avoid;
+  font-weight: bold;
+  margin: 12px 0;
+  padding: 12px 0;
+  border-top: 2px solid #000;
+  border-bottom: 1px solid #ccc;
 }
 
 .print-supervisor-info {
   background-color: #f9f9f9;
   padding: 12px;
-  margin: 15px 0;
+  margin: 12px 0;
   border-left: 4px solid #4CAF50;
-  font-size: 13px;
+  font-size: 12px;
   page-break-inside: avoid;
+  line-height: 1.5;
 }
 
 .print-supervisor-sig {
-  margin-top: 10px;
+  margin-top: 8px;
   text-align: center;
   border-top: 1px solid #ccc;
-  padding-top: 10px;
+  padding-top: 8px;
 }
 
 .print-supervisor-sig img {
-  max-width: 200px;
+  max-width: 150px;
   height: auto;
   border: 1px solid #ccc;
-  padding: 5px;
+  padding: 3px;
 }
 
 .print-grand-total {
   text-align: right;
-  font-size: 20px;
+  font-size: 18px;
   font-weight: bold;
-  margin-top: 40px;
-  padding-top: 20px;
+  margin-top: 20px;
+  padding: 15px 0;
   border-top: 3px solid #000;
   border-bottom: 3px solid #000;
-  padding-bottom: 20px;
 }
 
 .print-controls {
@@ -751,6 +750,32 @@ function getWeekEntries(weekStart) {
   return entries.filter(e => getWeekStart(e.date) === weekStart);
 }
 
+// ✅ AGGREGATE WEEK DATA BY TASK AND CABLE TYPE
+function getWeekSummary(weekStart) {
+  const weekEntries = getWeekEntries(weekStart);
+  const taskTotals = {};
+  const cableTotals = {};
+  let weekTotal = 0;
+
+  weekEntries.forEach(e => {
+    // Aggregate by task
+    if (!taskTotals[e.task]) {
+      taskTotals[e.task] = 0;
+    }
+    taskTotals[e.task] += e.hours;
+
+    // Aggregate by cable type
+    if (!cableTotals[e.cable]) {
+      cableTotals[e.cable] = 0;
+    }
+    cableTotals[e.cable] += e.hours;
+
+    weekTotal += e.hours;
+  });
+
+  return { taskTotals, cableTotals, weekTotal, entryCount: weekEntries.length };
+}
+
 // ✅ SHOW STATUS MESSAGE
 function showStatus(message, type) {
   const msg = document.getElementById("statusMsg");
@@ -783,7 +808,7 @@ document.getElementById("exportBtn").onclick = function () {
   showStatus("CSV exported successfully", "success");
 };
 
-// ✅ PRINT FULL REPORT WITH ALL WEEKS
+// ✅ PRINT FULL REPORT WITH ALL WEEKS (CONDENSED)
 document.getElementById("printReportBtn").onclick = function () {
   if (entries.length === 0) {
     showStatus("No entries to print", "error");
@@ -798,7 +823,7 @@ function closePrintView() {
   document.getElementById("printView").classList.remove("active");
 }
 
-// ✅ OPEN PRINT VIEW WITH ALL WEEKS
+// ✅ OPEN PRINT VIEW WITH CONDENSED WEEK SUMMARIES
 function openPrintView() {
   const printContent = document.getElementById("printContent");
   const allWeeks = getAllWeeks();
@@ -816,31 +841,41 @@ function openPrintView() {
   
   allWeeks.forEach(weekStart => {
     const weekEnd = getWeekEnd(weekStart);
-    const weekEntries = getWeekEntries(weekStart);
+    const summary = getWeekSummary(weekStart);
     const sigData = weeklySignatures[weekStart] || {};
-    let weekTotal = 0;
     
-    weekEntries.forEach(e => {
-      weekTotal += e.hours;
-      grandTotal += e.hours;
-    });
+    grandTotal += summary.weekTotal;
     
-    html += `<div class="print-week-header">Week: ${weekStart} to ${weekEnd}</div>`;
+    // Week header with date range
+    html += `<div class="print-week-header">Week: ${weekStart} to ${weekEnd} (${summary.entryCount} entries)</div>`;
     
-    weekEntries.forEach(e => {
+    // Week summary grid
+    html += `<div class="print-week-summary">`;
+    
+    // Task breakdown
+    Object.entries(summary.taskTotals).forEach(([task, hours]) => {
       html += `
-        <div class="print-entry-item">
-          <div class="print-entry-date">${e.date}</div>
-          <div class="print-entry-detail"><strong>Job:</strong> ${e.job}</div>
-          <div class="print-entry-detail"><strong>Work:</strong> ${e.work}</div>
-          <div class="print-entry-detail"><strong>Cable:</strong> ${e.cable}</div>
-          <div class="print-entry-detail"><strong>Task:</strong> ${e.task}</div>
-          <div class="print-entry-hours">Hours: ${e.hours}</div>
+        <div class="print-summary-item">
+          <span class="print-summary-label">${task}:</span>
+          <span class="print-summary-value">${hours} hrs</span>
         </div>
       `;
     });
     
-    html += `<div class="print-week-total">Week Total: ${weekTotal} hours</div>`;
+    // Cable type breakdown
+    Object.entries(summary.cableTotals).forEach(([cable, hours]) => {
+      html += `
+        <div class="print-summary-item">
+          <span class="print-summary-label">${cable}:</span>
+          <span class="print-summary-value">${hours} hrs</span>
+        </div>
+      `;
+    });
+    
+    html += `</div>`;
+    
+    // Week total
+    html += `<div class="print-week-total">Week Total: ${summary.weekTotal} hours</div>`;
     
     // Add supervisor signature info if available
     if (sigData.supervisorName) {
@@ -1003,20 +1038,20 @@ document.getElementById("addBtn").onclick = function () {
   }
 
   entries.push({ date, job, work, cable, task, hours });
-
   saveData();
   render();
   
+  // Clear inputs
   document.getElementById("job").value = "";
   document.getElementById("work").value = "";
   document.getElementById("hours").value = "";
   
-  showStatus("Entry added", "success");
+  showStatus("Entry added ✓", "success");
 };
 
 // ✅ DELETE ENTRY
 function deleteEntry(index) {
-  if (confirm("Delete this entry? This cannot be undone.")) {
+  if (confirm("Delete this entry?")) {
     entries.splice(index, 1);
     saveData();
     render();
@@ -1024,283 +1059,201 @@ function deleteEntry(index) {
   }
 }
 
-// ✅ RENDER
+// ✅ RENDER FULL VIEW
 function render() {
+  const allWeeks = getAllWeeks();
+  const weeksList = document.getElementById("weeksList");
+  const weekSelector = document.getElementById("weekSelector");
+  
+  weeksList.innerHTML = "";
+  weekSelector.innerHTML = "";
 
   let total = 0;
-  entries.forEach(e => {
-    total += e.hours;
-  });
-  document.getElementById("total").innerText = total;
+  allWeeks.forEach(weekStart => {
+    const weekEntries = getWeekEntries(weekStart);
+    let weekTotal = 0;
 
-  // Render week selector
-  const allWeeks = getAllWeeks();
-  const weekSelector = document.getElementById("weekSelector");
-  weekSelector.innerHTML = "";
-  
-  if (allWeeks.length === 0) {
-    currentWeek = null;
-  } else {
-    allWeeks.forEach(weekStart => {
-      const btn = document.createElement("button");
-      const weekEnd = getWeekEnd(weekStart);
-      btn.textContent = `📅 ${weekStart}`;
-      btn.onclick = () => {
-        currentWeek = weekStart;
-        document.querySelectorAll(".week-selector button").forEach(b => b.classList.remove("active"));
-        btn.classList.add("active");
-        renderWeeksList();
-      };
-      if (!currentWeek) {
-        currentWeek = allWeeks[0];
-      }
-      if (currentWeek === weekStart) {
-        btn.classList.add("active");
-      }
-      weekSelector.appendChild(btn);
+    weekEntries.forEach(e => {
+      total += e.hours;
+      weekTotal += e.hours;
     });
-  }
 
-  renderWeeksList();
-}
+    // Week selector button
+    const btn = document.createElement("button");
+    btn.textContent = `${weekStart} (${weekTotal}h)`;
+    btn.className = weekStart === currentWeek ? "active" : "";
+    btn.onclick = () => {
+      currentWeek = weekStart;
+      render();
+    };
+    weekSelector.appendChild(btn);
 
-function renderWeeksList() {
-  const weeksList = document.getElementById("weeksList");
-  weeksList.innerHTML = "";
+    // Only show entries for current week
+    if (weekStart !== currentWeek) return;
 
-  if (!currentWeek) {
-    return;
-  }
+    const weekEnd = getWeekEnd(weekStart);
+    const sigData = weeklySignatures[weekStart] || {};
 
-  const weekEntries = getWeekEntries(currentWeek);
-  const weekEnd = getWeekEnd(currentWeek);
-  const sigData = weeklySignatures[currentWeek] || {};
-  const isSigned = !!sigData.signature;
+    const section = document.createElement("div");
+    section.className = "week-section";
 
-  let weekTotal = 0;
-  weekEntries.forEach(e => {
-    weekTotal += e.hours;
-  });
+    const header = document.createElement("div");
+    header.className = `week-header ${sigData.supervisorName ? "signed" : "unsigned"}`;
+    header.textContent = `Week: ${weekStart} to ${weekEnd} ${sigData.supervisorName ? "✅ Signed" : "🔲 Unsigned"}`;
+    section.appendChild(header);
 
-  // Create week section
-  const weekSection = document.createElement("div");
-  weekSection.className = "week-section";
+    // Entries
+    weekEntries.forEach((e, index) => {
+      const entry = document.createElement("div");
+      entry.className = "entry";
 
-  // Week header
-  const header = document.createElement("div");
-  header.className = `week-header ${isSigned ? "signed" : "unsigned"}`;
-  header.innerHTML = `📅 Week: ${currentWeek} to ${weekEnd} ${isSigned ? "✅ SIGNED" : "⏳ PENDING"}`;
-  weekSection.appendChild(header);
+      entry.innerHTML = `
+        <b>${e.date}</b>
+        <strong>Job:</strong> ${e.job}<br>
+        <strong>Work:</strong> ${e.work}<br>
+        <strong>Cable:</strong> ${e.cable}<br>
+        <strong>Task:</strong> ${e.task}<br>
+        <strong>Hours:</strong> <span style="color: #2196F3; font-weight: bold;">${e.hours}</span>
+        <div class="entry-buttons">
+          <button onclick="openEditModal(${index})">✏️ Edit</button>
+          <button onclick="deleteEntry(${index})">🗑️ Delete</button>
+        </div>
+      `;
+      section.appendChild(entry);
+    });
 
-  // Week totals
-  const totalsDiv = document.createElement("div");
-  totalsDiv.className = "week-totals";
-  totalsDiv.innerHTML = `
-    <div class="week-total-item">
-      <span>Entries</span>
-      <b>${weekEntries.length}</b>
-    </div>
-    <div class="week-total-item">
-      <span>Hours</span>
-      <b>${weekTotal}</b>
-    </div>
-  `;
-  weekSection.appendChild(totalsDiv);
+    // Week totals breakdown
+    const taskTotals = {};
+    const cableTotals = {};
+    weekEntries.forEach(e => {
+      taskTotals[e.task] = (taskTotals[e.task] || 0) + e.hours;
+      cableTotals[e.cable] = (cableTotals[e.cable] || 0) + e.hours;
+    });
 
-  // Entries
-  const entriesDiv = document.createElement("div");
-  let entryIndexMap = {};
-  entries.forEach((e, idx) => {
-    if (getWeekStart(e.date) === currentWeek) {
-      entryIndexMap[idx] = true;
+    const totals = document.createElement("div");
+    totals.className = "week-totals";
+    totals.innerHTML = `
+      <div class="week-total-item"><strong>Total</strong><b>${weekTotal}h</b></div>
+      <div class="week-total-item"><strong>Entries</strong><b>${weekEntries.length}</b></div>
+    `;
+    section.appendChild(totals);
+
+    // Supervisor section
+    const supervisorSection = document.createElement("div");
+    supervisorSection.className = `supervisor-info ${sigData.supervisorName ? "signed" : ""}`;
+    
+    if (sigData.supervisorName) {
+      supervisorSection.innerHTML = `
+        <div class="supervisor-name">✅ Signed by: ${sigData.supervisorName}</div>
+        <div><strong>Licence:</strong> ${sigData.licenceNumber}</div>
+        <div><strong>Date:</strong> ${new Date(sigData.date).toLocaleDateString()}</div>
+        ${sigData.signature ? `<div class="signature-display"><img src="${sigData.signature}" alt="Signature"></div>` : ''}
+        <button onclick="clearSignature('${weekStart}')" style="margin-top: 10px; background-color: #ff9800;">❌ Clear Signature</button>
+      `;
+    } else {
+      supervisorSection.innerHTML = `
+        <div><strong>Supervisor Name:</strong></div>
+        <input id="supName_${weekStart}" type="text" placeholder="Supervisor Name" style="margin: 8px 0;">
+        <input id="supLic_${weekStart}" type="text" placeholder="Licence Number" style="margin: 8px 0;">
+        <div><strong>Draw Signature:</strong></div>
+        <canvas id="sigCanvas_${weekStart}" class="sig-canvas"></canvas>
+        <div class="button-group">
+          <button onclick="clearCanvas('${weekStart}')">🔄 Clear</button>
+          <button onclick="signWeek('${weekStart}')" style="background-color: #4CAF50; color: white;">✅ Sign Off</button>
+        </div>
+      `;
+    }
+    section.appendChild(supervisorSection);
+
+    weeksList.appendChild(section);
+
+    // Initialize canvas if not signed
+    if (!sigData.supervisorName) {
+      setTimeout(() => initCanvas(weekStart), 0);
     }
   });
 
-  weekEntries.forEach((e, weekIndex) => {
-    const globalIndex = entries.indexOf(e);
-    const entryDiv = document.createElement("div");
-    entryDiv.className = "entry";
-    entryDiv.innerHTML = `
-      <b>${e.date}</b> - ${e.job}
-      <br>${e.work}
-      <br>${e.cable} | ${e.task}
-      <br>${e.hours} hrs
-    `;
+  document.getElementById("total").textContent = total;
+}
 
-    const buttonsDiv = document.createElement("div");
-    buttonsDiv.className = "entry-buttons";
-    
-    const editBtn = document.createElement("button");
-    editBtn.textContent = "✏️ Edit";
-    editBtn.onclick = () => openEditModal(globalIndex);
-    
-    const deleteBtn = document.createElement("button");
-    deleteBtn.textContent = "🗑️ Delete";
-    deleteBtn.onclick = () => deleteEntry(globalIndex);
-    
-    buttonsDiv.appendChild(editBtn);
-    buttonsDiv.appendChild(deleteBtn);
-    entryDiv.appendChild(buttonsDiv);
-    entriesDiv.appendChild(entryDiv);
+// ✅ CANVAS SETUP
+function initCanvas(weekStart) {
+  const canvas = document.getElementById(`sigCanvas_${weekStart}`);
+  if (!canvas) return;
+
+  const ctx = canvas.getContext("2d");
+  let isDrawing = false;
+
+  canvas.addEventListener("mousedown", () => isDrawing = true);
+  canvas.addEventListener("mouseup", () => isDrawing = false);
+  canvas.addEventListener("mousemove", (e) => {
+    if (!isDrawing) return;
+    const rect = canvas.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    ctx.lineTo(x, y);
+    ctx.stroke();
   });
 
-  weekSection.appendChild(entriesDiv);
+  // Touch support
+  canvas.addEventListener("touchstart", () => isDrawing = true);
+  canvas.addEventListener("touchend", () => isDrawing = false);
+  canvas.addEventListener("touchmove", (e) => {
+    if (!isDrawing) return;
+    const rect = canvas.getBoundingClientRect();
+    const touch = e.touches[0];
+    const x = touch.clientX - rect.left;
+    const y = touch.clientY - rect.top;
+    ctx.lineTo(x, y);
+    ctx.stroke();
+  });
 
-  // Supervisor sign-off section
-  if (isSigned) {
-    const signedDiv = document.createElement("div");
-    signedDiv.className = "supervisor-info signed";
-    signedDiv.innerHTML = `
-      <div class="supervisor-name">✅ Supervisor: ${sigData.supervisorName}</div>
-      <div>Licence Number: ${sigData.licenceNumber}</div>
-      <div><small>Signed: ${new Date(sigData.date).toLocaleDateString()}</small></div>
-      <div class="signature-display">
-        <img src="${sigData.signature}" alt="Supervisor Signature">
-      </div>
-    `;
-    weekSection.appendChild(signedDiv);
-  } else {
-    const sigSection = document.createElement("div");
-    sigSection.className = "signature-section";
-    sigSection.innerHTML = `
-      <h3>✏️ Supervisor Sign-Off</h3>
-      <input id="sup-name-${currentWeek}" placeholder="Supervisor Name" type="text" value="">
-      <input id="sup-licence-${currentWeek}" placeholder="Licence Number" type="text" value="">
-      <p><b>Signature:</b></p>
-      <canvas id="sig-canvas-${currentWeek}" class="sig-canvas"></canvas>
-      <div class="button-group">
-        <button onclick="clearSignature('${currentWeek}')" type="button">🔄 Clear</button>
-        <button onclick="saveSignature('${currentWeek}')" type="button">✅ Save Sig</button>
-      </div>
-      <p id="sig-status-${currentWeek}"></p>
-    `;
-    weekSection.appendChild(sigSection);
-  }
-
-  weeksList.appendChild(weekSection);
-
-  // Setup canvas if not signed
-  if (!isSigned) {
-    setTimeout(() => {
-      setupCanvas(currentWeek, null);
-    }, 100);
-  }
-}
-
-let canvasState = {};
-
-function setupCanvas(weekStart, existingSignature) {
-  const canvasId = `sig-canvas-${weekStart}`;
-  const canvas = document.getElementById(canvasId);
-  if (!canvas) return;
-
-  const ctx = canvas.getContext("2d");
-  
-  // Get the display size of the canvas
-  const style = window.getComputedStyle(canvas);
-  const displayWidth = parseInt(style.width);
-  const displayHeight = parseInt(style.height);
-  
-  // Set the canvas resolution to match display size
-  const dpr = window.devicePixelRatio || 1;
-  canvas.width = displayWidth * dpr;
-  canvas.height = displayHeight * dpr;
-  
-  // Scale context to match device pixel ratio
-  ctx.scale(dpr, dpr);
-  
-  // Set drawing styles
   ctx.lineWidth = 2;
   ctx.lineCap = "round";
-  ctx.lineJoin = "round";
-  ctx.strokeStyle = "#000000";
-
-  canvasState[weekStart] = {
-    canvas,
-    ctx,
-    isDrawing: false,
-    dpr: dpr,
-    displayWidth: displayWidth,
-    displayHeight: displayHeight,
-    signatureImage: existingSignature || null
-  };
-
-  function getCoordinates(e) {
-    const rect = canvas.getBoundingClientRect();
-    const clientX = e.clientX !== undefined ? e.clientX : (e.touches && e.touches[0] ? e.touches[0].clientX : 0);
-    const clientY = e.clientY !== undefined ? e.clientY : (e.touches && e.touches[0] ? e.touches[0].clientY : 0);
-    
-    return {
-      x: clientX - rect.left,
-      y: clientY - rect.top
-    };
-  }
-
-  function startDrawing(e) {
-    e.preventDefault();
-    canvasState[weekStart].isDrawing = true;
-    const coords = getCoordinates(e);
-    ctx.beginPath();
-    ctx.moveTo(coords.x, coords.y);
-  }
-
-  function draw(e) {
-    e.preventDefault();
-    if (!canvasState[weekStart].isDrawing) return;
-    const coords = getCoordinates(e);
-    ctx.lineTo(coords.x, coords.y);
-    ctx.stroke();
-  }
-
-  function stopDrawing(e) {
-    e.preventDefault();
-    canvasState[weekStart].isDrawing = false;
-    ctx.closePath();
-  }
-
-  canvas.addEventListener("mousedown", startDrawing);
-  canvas.addEventListener("mousemove", draw);
-  canvas.addEventListener("mouseup", stopDrawing);
-  canvas.addEventListener("mouseout", stopDrawing);
-
-  canvas.addEventListener("touchstart", startDrawing);
-  canvas.addEventListener("touchmove", draw);
-  canvas.addEventListener("touchend", stopDrawing);
 }
 
-function clearSignature(weekStart) {
-  const canvas = document.getElementById(`sig-canvas-${weekStart}`);
+// ✅ CLEAR CANVAS
+function clearCanvas(weekStart) {
+  const canvas = document.getElementById(`sigCanvas_${weekStart}`);
+  if (canvas) {
+    const ctx = canvas.getContext("2d");
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+  }
+}
+
+// ✅ SIGN WEEK
+function signWeek(weekStart) {
+  const supName = document.getElementById(`supName_${weekStart}`).value;
+  const supLic = document.getElementById(`supLic_${weekStart}`).value;
+  const canvas = document.getElementById(`sigCanvas_${weekStart}`);
+
+  if (!supName || !supLic) {
+    showStatus("Enter supervisor name and licence number", "error");
+    return;
+  }
+
   if (!canvas) return;
+
   const ctx = canvas.getContext("2d");
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
-  canvasState[weekStart].signatureImage = null;
-  document.getElementById(`sig-status-${weekStart}`).innerHTML = "";
+  if (ctx.getImageData(0, 0, canvas.width, canvas.height).data.every(x => x === 0)) {
+    showStatus("Draw a signature", "error");
+    return;
+  }
+
+  const sigImage = canvas.toDataURL();
+  saveWeeklySignature(weekStart, supName, supLic, sigImage);
+  render();
+  showStatus("Week signed off ✓", "success");
 }
 
-function saveSignature(weekStart) {
-  const supName = document.getElementById(`sup-name-${weekStart}`).value;
-  const supLicence = document.getElementById(`sup-licence-${weekStart}`).value;
-  const canvas = document.getElementById(`sig-canvas-${weekStart}`);
-
-  if (!supName || !supLicence) {
-    showStatus("Please enter supervisor name and licence number", "error");
-    return;
+// ✅ CLEAR SIGNATURE
+function clearSignature(weekStart) {
+  if (confirm("Remove signature for this week?")) {
+    delete weeklySignatures[weekStart];
+    localStorage.setItem("weeklySignatures", JSON.stringify(weeklySignatures));
+    render();
+    showStatus("Signature cleared", "success");
   }
-
-  // Check if signature has been drawn
-  const canvasData = canvas.toDataURL();
-  const blankCanvas = document.createElement("canvas");
-  blankCanvas.width = canvas.width;
-  blankCanvas.height = canvas.height;
-  
-  if (canvasData === blankCanvas.toDataURL()) {
-    showStatus("Please draw a signature", "error");
-    return;
-  }
-
-  saveWeeklySignature(weekStart, supName, supLicence, canvasData);
-  render();
-  showStatus("Signature saved successfully", "success");
 }
 
 </script>
